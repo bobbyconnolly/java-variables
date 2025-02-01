@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Understanding Java Memory: Variables, References, and Objects</title>
+    <style>
+      :root {
+        --java-keyword: #c792ea;
+        --java-type: #82aaff;
+        --java-string: #c3e88d;
+        --java-number: #f78c6c;
+        --box-border: #34495e;
+        --sticker-bg: #2c3e50;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        padding: 0.5rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        background: #f5f5f5;
+      }
+
+      @media (min-width: 768px) {
+        body {
+          padding: 2rem;
+        }
+      }
+
+      .section {
+        background: white;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      @media (min-width: 768px) {
+        .section {
+          padding: 2rem;
+          margin: 2rem 0;
+        }
+      }
+
+      h1,
+      h2 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+
+      @media (min-width: 768px) {
+        h1 {
+          font-size: 2rem;
+        }
+        h2 {
+          font-size: 1.75rem;
+        }
+      }
+
+      .variable-box {
+        position: relative;
+        width: 200px;
+        height: 100px;
+        border: 3px solid var(--box-border);
+        margin: 1rem;
+        display: inline-block;
+        background: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .type-label,
+      .name-label {
+        position: absolute;
+        background: var(--sticker-bg);
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-family: "Consolas", monospace;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .type-label {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+      }
+
+      /* Make type labels stand out more */
+      .type-label {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        background: var(--sticker-bg);
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-family: "Consolas", monospace;
+        font-weight: bold;
+      }
+
+      /* Special subtle highlighting for Fish/Pet/Cat type labels */
+      .inheritance-example .type-label[data-type="Fish"],
+      .inheritance-example .type-label[data-type="Pet"],
+      .inheritance-example .type-label[data-type="Cat"],
+      .polymorphism-example .type-label[data-type="Fish"],
+      .polymorphism-example .type-label[data-type="Pet"] {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 8px rgba(52, 152, 219, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .type-label {
+        top: -10px;
+        left: -10px;
+      }
+
+      .name-label {
+        bottom: -10px;
+        right: -10px;
+      }
+
+      .content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: "Consolas", monospace;
+        font-size: 1.2rem;
+      }
+
+      .arrow {
+        display: inline-block;
+        width: 40px;
+        height: 8px;
+        position: relative;
+      }
+
+      .arrow::after {
+        content: "";
+        position: absolute;
+        right: -8px;
+        top: -8px;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 12px 0 12px 16px;
+      }
+
+      .arrow.blue {
+        background: #4287f5;
+        transform: rotate(184deg);
+      }
+      .arrow.blue::after {
+        border-color: transparent transparent transparent #4287f5;
+      }
+
+      .arrow.green {
+        background: #42f587;
+        transform: rotate(315deg);
+      }
+      .arrow.green::after {
+        border-color: transparent transparent transparent #42f587;
+      }
+
+      .arrow.red {
+        background: #f54242;
+        transform: rotate(75deg);
+      }
+      .arrow.red::after {
+        border-color: transparent transparent transparent #f54242;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        padding: 0.5rem;
+        border-left: 4px solid #ffc107;
+        margin: 1rem 0;
+      }
+
+      .java-code {
+        background: #282c34;
+        color: #abb2bf;
+        padding: 1rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+        font-family: "Consolas", monospace;
+        overflow-x: auto;
+      }
+
+      .java-keyword {
+        color: var(--java-keyword);
+      }
+      .java-type {
+        color: var(--java-type);
+      }
+      .java-string {
+        color: var(--java-string);
+      }
+      .java-number {
+        color: var(--java-number);
+      }
+
+      .boxes-container {
+        display: flex;
+        align-items: center;
+        margin: 2rem 0;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      @media (max-width: 767px) {
+        .boxes-container {
+          margin: 1rem 0;
+        }
+
+        .variable-box {
+          margin: 0.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Understanding Java Memory: Variables, References, and Objects</h1>
+
+    <div class="section">
+      <h2>The Anatomy of a Variable Box</h2>
+      <p>Every variable in Java is represented by a box with two important labels:</p>
+      <div class="boxes-container">
+        <div class="variable-box">
+          <span class="type-label">String</span>
+          <span class="content">"Hello"</span>
+          <span class="name-label">message</span>
+        </div>
+      </div>
+      <ul>
+        <li>The <strong>type label</strong> (top-left) tells us what kind of data can go in this box</li>
+        <li>The <strong>name label</strong> (bottom-right) is how we refer to this box in our code</li>
+        <li>The <strong>content</strong> (middle) shows what's actually stored in the variable</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>What's Behind The Arrow?</h2>
+      <p>When we draw an arrow in our boxes, here's what it really means:</p>
+
+      <div class="boxes-container" style="justify-content: flex-start; gap: 2rem">
+        <div class="variable-box">
+          <span class="type-label">Student</span>
+          <span class="content"><div class="arrow blue" style="transform: rotate(-15deg)"></div></span>
+          <span class="name-label">teamLead</span>
+        </div>
+
+        <svg width="300" height="150" style="min-width: 300px">
+          <defs>
+            <marker id="bluearrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#4287f5" />
+            </marker>
+          </defs>
+
+          <!-- Arrow from box to object -->
+          <path d="M0 75 L50 75" stroke="#4287f5" stroke-width="2" marker-end="url(#bluearrow)" />
+
+          <!-- Student object -->
+          <rect x="60" y="20" width="220" height="110" fill="#f0f0f0" stroke="#2c3e50" stroke-width="2" />
+          <text x="70" y="45" font-family="monospace" font-size="14" fill="#2c3e50">Student Object</text>
+          <line x1="60" y1="55" x2="280" y2="55" stroke="#2c3e50" />
+          <text x="70" y="80" font-family="monospace" font-size="14" fill="#2c3e50">id: 12345</text>
+          <text x="70" y="105" font-family="monospace" font-size="14" fill="#2c3e50">grade: 95</text>
+        </svg>
+      </div>
+
+      <p>Every arrow points to some object in memory. The arrow shows us where to find all the object's data!</p>
+    </div>
+
+    <div class="section">
+      <h2>Primitives vs Objects</h2>
+      <div class="boxes-container">
+        <div class="variable-box">
+          <span class="type-label">int</span>
+          <span class="content">42</span>
+          <span class="name-label">tacos</span>
+        </div>
+        <div class="variable-box">
+          <span class="type-label">Integer</span>
+          <span class="content"><div class="arrow blue"></div></span>
+          <span class="name-label">boxedTacos</span>
+        </div>
+        <div class="variable-box">
+          <span class="type-label">String</span>
+          <span class="content"><div class="arrow green"></div></span>
+          <span class="name-label">pizzaType</span>
+        </div>
+        <div class="variable-box">
+          <span class="type-label">ArrayList</span>
+          <span class="content"><div class="arrow red"></div></span>
+          <span class="name-label">snacks</span>
+        </div>
+      </div>
+      <p>
+        See how primitives store their value directly, while objects give us those colorful arrows? When we "box" a
+        primitive (like converting an <code>int</code> to <code>Integer</code>), we're wrapping it in an object - that's
+        why <code>boxedTacos</code> gets an arrow!
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>The Famous "new" Keyword</h2>
+      <p>Whenever you see <code>new</code>, you're creating a fresh arrow! Here are some examples:</p>
+      <div class="java-code">
+        <span class="java-keyword">new</span> <span class="java-type">Pet</span>();<br />
+        <span class="java-keyword">new</span> <span class="java-type">Cat</span>();<br />
+        <span class="java-keyword">new</span> <span class="java-type">Dog</span>();<br />
+        <span class="java-keyword">new</span> <span class="java-type">Fish</span>();<br />
+        <span class="java-keyword">new</span> <span class="java-type">ArrayList</span>&lt;<span class="java-type"
+          >String</span
+        >&gt;();<br />
+        <span class="java-keyword">new</span> <span class="java-type">PhraseAnalyzer</span>();
+      </div>
+      <div class="highlight">
+        Each <span class="java-keyword">new</span> creates a unique arrow (unique color/direction) pointing to a new
+        object in memory!
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>The Tale of Two Variables</h2>
+      <p>Let's see what happens when we create two cats:</p>
+      <div class="java-code">
+        <span class="java-type">Cat</span> cat1 = <span class="java-keyword">new</span>
+        <span class="java-type">Cat</span>();<br />
+        <span class="java-type">Cat</span> cat2 = <span class="java-keyword">new</span>
+        <span class="java-type">Cat</span>();
+      </div>
+      <div class="boxes-container">
+        <div class="variable-box">
+          <span class="type-label" data-type="Cat">Cat</span>
+          <span class="content"><div class="arrow blue"></div></span>
+          <span class="name-label">cat1</span>
+        </div>
+        <div class="variable-box">
+          <span class="type-label">Cat</span>
+          <span class="content"><div class="arrow green"></div></span>
+          <span class="name-label">cat2</span>
+        </div>
+      </div>
+      <p>
+        Each <span class="java-keyword">new</span> creates a unique Cat object with its own arrow. But watch what
+        happens next...
+      </p>
+
+      <div class="java-code">cat1 = cat2; <span style="color: #666">// The moment of truth!</span></div>
+
+      <div class="boxes-container">
+        <div class="variable-box">
+          <span class="type-label">Cat</span>
+          <span class="content"><div class="arrow green"></div></span>
+          <span class="name-label">cat1</span>
+        </div>
+        <div class="variable-box">
+          <span class="type-label">Cat</span>
+          <span class="content"><div class="arrow green"></div></span>
+          <span class="name-label">cat2</span>
+        </div>
+      </div>
+
+      <div class="highlight" style="background: #ffe4e4; border-left-color: #ff4444">
+        🗑️ Blue Arrow is thrown out<br />
+        With the blue arrow gone - that Cat object no longer has any references to it. This is a job for the garbage
+        collector... ♻️
+      </div>
+
+      <p>
+        Both variables now point to the <em>exact same Cat object</em> (notice they have the same green arrow). We
+        didn't copy the Cat - we just made another variable point to it. If we make cat1 do a trick, cat2 will know it
+        too, because they're the same cat!
+      </p>
+
+      <div class="java-code">
+        <span class="variable-highlight" style="color: #f7d794">cat1</span>.learnTrick(<span class="java-string"
+          >"backflip"</span
+        >); System.out.println(<span class="variable-highlight" style="color: #f7d794">cat2</span>.knowsTrick(<span
+          class="java-string"
+          >"backflip"</span
+        >)); <span style="color: #666">// true!</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>A Fish Tale: Understanding Inheritance</h2>
+
+      <div style="margin-bottom: 2rem">
+        <div class="java-code">
+          <span style="color: #666">// A Fish IS-A Pet, so this works:</span><br />
+          <span class="java-type">Fish</span> nemo = <span class="java-keyword">new</span>
+          <span class="java-type">Fish</span>();<br />
+          <span class="java-type">Pet</span> myPet = nemo; <span style="color: #666">// Perfectly fine!</span>
+        </div>
+
+        <div class="boxes-container">
+          <div class="variable-box">
+            <span class="type-label" data-type="Fish">Fish</span>
+            <span class="content"><div class="arrow red"></div></span>
+            <span class="name-label">nemo</span>
+          </div>
+          <div class="variable-box">
+            <span class="type-label" data-type="Pet">Pet</span>
+            <span class="content"><div class="arrow red"></div></span>
+            <span class="name-label">myPet</span>
+          </div>
+        </div>
+        <p>
+          Notice how both variables have the <em>same red arrow</em>? That's because they're pointing to the exact same
+          Fish object! The only difference is how we're looking at it (through a Fish lens or a Pet lens).
+        </p>
+      </div>
+
+      <div style="margin-bottom: 2rem">
+        <div class="java-code">
+          <span style="color: #666">// But this would explode! 💥</span><br />
+          <span class="java-type">Cat</span> mishap = <span class="java-keyword">new</span>
+          <span class="java-type">Fish</span>(); <span style="color: #666">// BOOM! A Fish is not a Cat!</span>
+        </div>
+
+        <div class="highlight" style="background: #ffe4e4; border-left-color: #ff4444">
+          🚫 Java Rule: You can store an object in a variable if the object's class IS-A (extends/implements) the
+          variable's type.
+          <br /><br />
+          Fish IS-A Pet ✅<br />
+          Fish IS-NOT-A Cat ❌
+        </div>
+      </div>
+
+      <div>
+        <p>Here's the full picture of what can hold what:</p>
+        <div class="boxes-container">
+          <div class="variable-box">
+            <span class="type-label">Fish</span>
+            <span class="content" style="font-size: 0.8rem">Fish only</span>
+            <span class="name-label">fishVar</span>
+          </div>
+          <div class="variable-box">
+            <span class="type-label">Pet</span>
+            <span class="content" style="font-size: 0.8rem">Any Pet, Fish, Cat</span>
+            <span class="name-label">petVar</span>
+          </div>
+          <div class="variable-box">
+            <span class="type-label">Cat</span>
+            <span class="content" style="font-size: 0.8rem">Cat only</span>
+            <span class="name-label">catVar</span>
+          </div>
+        </div>
+        <p>
+          Remember: The type label (sticker) on the box tells us what kinds of arrows we're allowed to put in it. A Pet
+          box is very welcoming - it accepts any Pet or Pet-descendant arrows!
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Wearing Different Hats: The Magic of Polymorphism</h2>
+
+      <div class="java-code">
+        <span class="java-type">Fish</span> nemo = <span class="java-keyword">new</span>
+        <span class="java-type">Fish</span>();<br />
+        <span class="java-type">Pet</span> myPet = nemo; <span style="color: #666">// Same fish, different hat!</span>
+      </div>
+
+      <div class="boxes-container">
+        <div class="variable-box">
+          <span class="type-label">Fish</span>
+          <span class="content"><div class="arrow red"></div></span>
+          <span class="name-label">nemo</span>
+        </div>
+        <div class="variable-box">
+          <span class="type-label">Pet</span>
+          <span class="content"><div class="arrow red"></div></span>
+          <span class="name-label">myPet</span>
+        </div>
+      </div>
+
+      <div class="highlight" style="background: #e8f4f8; border-left-color: #3498db">
+        Remember: When we created this Fish with <span class="java-keyword">new</span>, it was born a Fish 🐟 and it'll
+        always BE a Fish!<br /><br />
+        But just like how your professor can be...<br />
+        👩‍🏫 A professor (when teaching)<br />
+        🛒 A customer (at the store)<br />
+        🎟️ A moviegoer (at the cinema)<br />
+        <br />
+        ...our Fish can wear different hats depending on how we look at it!
+      </div>
+
+      <div class="java-code">
+        nemo.swim(); <span style="color: #666">// Works! Fish can swim</span><br />
+        nemo.makeSound(); <span style="color: #666">// Works! Fish can make sounds (blub blub)</span><br />
+        <br />
+        myPet.makeSound(); <span style="color: #666">// Works! All Pets can make sounds</span><br />
+        myPet.swim(); <span style="color: #666">// ❌ ERROR! Pet doesn't know about swimming</span>
+      </div>
+
+      <p>
+        Even though <code>myPet</code> and <code>nemo</code> point to the exact same Fish (see the same red arrow?),
+        when we look at it through the Pet box, we can only see its Pet features. It's still secretly a Fish underneath
+        - it hasn't lost its ability to swim - we just can't see that ability through the Pet lens.
+      </p>
+
+      <div class="highlight" style="background: #ffe4e4; border-left-color: #ff4444">
+        🔑 Key Point: An object will always BE what you <span class="java-keyword">new</span>'ed it as. The variable
+        type just determines which features you're allowed to see!
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>The Big Picture</h2>
+      <div class="highlight">
+        1. Every object variable is just a box with a type sticker and a name sticker 📦<br />
+        2. When you use <span class="java-keyword">new</span>, you create a fresh arrow with unique color/direction that
+        points to a new object in memory 🎨<br />
+        🎨<br />
+        3. Assigning variables may make them share the same arrow (this doesn't copy the underlying object - just the
+        arrow!) 🎯<br />
+        4. Reassigning removes the old arrow 🗑️<br />
+        4a. If that was the last arrow pointing to an object, the object too is garbage collected! ♻️<br />
+        5. A variable can only hold arrows to objects that match its type (or children of its type) ✅
+      </div>
+    </div>
+  </body>
+</html>
